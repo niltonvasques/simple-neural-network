@@ -3,33 +3,55 @@ require 'matrix'
 
 require_relative 'data'
 
+# Monkey patchs
+# ----------------------------------------------
 # 1 / 1 + et
-def sigmoid(t)
-  1.0 / (1 + Math.exp(-t))
+class Float
+  def sigmoid
+    1.0 / (1 + Math.exp(-self))
+  end
 end
 
+class Array
+  def to_v
+    Vector.elements(self)
+  end
+
+  def sum
+    inject(:+)
+  end
+end
+
+# Neural network
+# ----------------------------------------------
 class Neuron
+  LEARNING_RATE = 0.2
   def initialize(inputs_count)
     @weights = Array.new(inputs_count) { rand }.to_v
   end
 
   def forward(inputs)
     @inputs = inputs
-    sigmoid(inputs.dot(@weights))
+    inputs.dot(@weights).sigmoid
   end
 
   def back_propagate(error)
-    @delta = error * 0.2
+    @delta = error * LEARNING_RATE
     errors = @weights * @delta
-    # update weights
-    @weights -= @inputs * @delta
+    update_weights
     errors
+  end
+
+  private
+
+  def update_weights
+    @weights -= @inputs * @delta
   end
 end
 
 class Layer
-  def initialize(neurons)
-    @neurons = neurons
+  def initialize(neurons_count, inputs_count)
+    @neurons = Array.new(neurons_count) { Neuron.new(inputs_count) }
   end
 
   def forward(inputs)
@@ -44,7 +66,7 @@ class Layer
 end
 
 class Network
-  def initialize(layers)
+  def initialize(*layers)
     @layers = layers
   end
 
@@ -61,21 +83,16 @@ class Network
   end
 end
 
-class Array
-  def to_v
-    Vector.elements(self)
-  end
-
-  def sum
-    inject(:+)
-  end
-end
+# Useful output stuff
+# ----------------------------------------------
 
 def print_prediction(outputs)
   puts "A: #{(outputs[0].round(2) * 100).to_i}%"
   puts "B: #{(outputs[1].round(2) * 100).to_i}%"
   puts "C: #{(outputs[2].round(2) * 100).to_i}%"
   puts "D: #{(outputs[3].round(2) * 100).to_i}%"
+  puts "E: #{(outputs[4].round(2) * 100).to_i}%"
+  puts "F: #{(outputs[5].round(2) * 100).to_i}%"
 end
 
 def print_letter(letter)
@@ -88,43 +105,31 @@ def print_letter(letter)
   puts ""
 end
 
-layers = []
-
-# first layer 4 * 5 = 20 neurons
-neurons = (1..20).to_a.map { |x| Neuron.new(20) }
-first_layer = Layer.new(neurons)
-layers << first_layer
-
-# second layer = 10 neurons
-neurons = (1..10).to_a.map { |x| Neuron.new(20) }
-second_layer = Layer.new(neurons)
-layers << second_layer
-
-# third layer = 4 neurons (A,B,C,D)
-neurons = (1..4).to_a.map { |x| Neuron.new(10) }
-output_layer = Layer.new(neurons)
-layers << output_layer
-
-nn = Network.new(layers)
+# Testing
+# ----------------------------------------------
+nn = Network.new(
+  Layer.new(20, 20),
+  Layer.new(10, 20),
+  Layer.new(6, 10)
+)
 
 # training
 
+TRAINING_DATA = [
+  { letter: LETTER_A.to_v, expected: EXPECTED_A.to_v },
+  { letter: LETTER_B.to_v, expected: EXPECTED_B.to_v },
+  { letter: LETTER_C.to_v, expected: EXPECTED_C.to_v },
+  { letter: LETTER_D.to_v, expected: EXPECTED_D.to_v },
+  { letter: LETTER_E.to_v, expected: EXPECTED_E.to_v },
+  { letter: LETTER_F.to_v, expected: EXPECTED_F.to_v },
+];
+
 1000.times do
-  output = nn.forward(LETTER_A.to_v)
-  errors = output - EXPECTED_A.to_v
-  nn.back_propagate(errors)
-
-  output = nn.forward(LETTER_B.to_v)
-  errors = output - EXPECTED_B.to_v
-  nn.back_propagate(errors)
-
-  output = nn.forward(LETTER_C.to_v)
-  errors = output - EXPECTED_C.to_v
-  nn.back_propagate(errors)
-
-  output = nn.forward(LETTER_D.to_v)
-  errors = output - EXPECTED_D.to_v
-  nn.back_propagate(errors)
+  TRAINING_DATA.each do |sample|
+    output = nn.forward(sample[:letter])
+    errors = output - sample[:expected]
+    nn.back_propagate(errors)
+  end
 end
 
 # test data
@@ -146,6 +151,16 @@ ap "---------------------------------------"
 
 ap "---------------- D --------------------"
 output = nn.forward(LETTER_D.to_v)
+print_prediction(output)
+ap "---------------------------------------"
+
+ap "---------------- E --------------------"
+output = nn.forward(LETTER_E.to_v)
+print_prediction(output)
+ap "---------------------------------------"
+
+ap "---------------- F --------------------"
+output = nn.forward(LETTER_F.to_v)
 print_prediction(output)
 ap "---------------------------------------"
 
