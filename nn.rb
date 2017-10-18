@@ -93,6 +93,7 @@ def print_prediction(outputs)
   puts "D: #{(outputs[3].round(2) * 100).to_i}%"
   puts "E: #{(outputs[4].round(2) * 100).to_i}%"
   puts "F: #{(outputs[5].round(2) * 100).to_i}%"
+  puts "G: #{(outputs[6].round(2) * 100).to_i}%"
 end
 
 def print_letter(letter)
@@ -110,7 +111,7 @@ end
 nn = Network.new(
   Layer.new(20, 20),
   Layer.new(10, 20),
-  Layer.new(6, 10)
+  Layer.new(7, 10)
 )
 
 # training
@@ -122,6 +123,7 @@ TRAINING_DATA = [
   { letter: LETTER_D.to_v, expected: EXPECTED_D.to_v },
   { letter: LETTER_E.to_v, expected: EXPECTED_E.to_v },
   { letter: LETTER_F.to_v, expected: EXPECTED_F.to_v },
+  { letter: LETTER_G.to_v, expected: EXPECTED_G.to_v },
 ];
 
 1000.times do
@@ -161,6 +163,11 @@ ap "---------------------------------------"
 
 ap "---------------- F --------------------"
 output = nn.forward(LETTER_F.to_v)
+print_prediction(output)
+ap "---------------------------------------"
+
+ap "---------------- G --------------------"
+output = nn.forward(LETTER_G.to_v)
 print_prediction(output)
 ap "---------------------------------------"
 
